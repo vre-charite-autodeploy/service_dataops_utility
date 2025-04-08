@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dataops-ut
+  namespace: utility
+  labels:
+    app: dataops-ut
+    env: charite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dataops-ut
+      env: charite
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 33%
+  template:
+    metadata:
+      labels:
+        app: dataops-ut
+        env: charite
+    spec:
+      containers:
+        - name: dataops-ut
+          image: s-hdp-vre-v007.charite.de/dataops-ut:<VERSION>
+          ports:
+            - containerPort: 5063
+          env:
+          - name: env
+            value: "charite"
+          - name: CONFIG_CENTER_ENABLED
+            value: "true"
+          - name: CONFIG_CENTER_BASE_URL
+            value: "http://common.utility:5062/"
+          readinessProbe:
+            tcpSocket:
+              port: 5063
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "1000Mi"
+              cpu: "1"
+            limits:
+              memory: "1000Mi"
+              cpu: "1"
+      nodeSelector:
+        namespace: utility
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dataops-ut
+  namespace: utility
+  labels:
+    app: dataops-ut
+    env: charite
+spec:
+  ports:
+  - name: http
+    port: 5063
+    targetPort: 5063
+  selector:
+    app: dataops-ut
+    env: charite
+  type: ClusterIP
